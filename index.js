@@ -5,6 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // middleware
 app.use(cors());
@@ -32,20 +33,6 @@ function verifyJWT(req, res, next) {
 }
 
 
-// const mailchimp = require("@mailchimp/mailchimp_marketing");
-
-// mailchimp.setConfig({
-//     apiKey: "YOUR_API_KEY",
-//     server: "YOUR_SERVER_PREFIX",
-// });
-
-// async function run() {
-//     const response = await mailchimp.ping.get();
-//     console.log(response);
-// }
-
-// run();
-
 
 async function run() {
 
@@ -66,6 +53,18 @@ async function run() {
                 res.status(403).send({ message: 'Forbidden' })
             }
         }
+
+        app.post('/create-payment-intent', async (req, res) => {
+            const service = req.body;
+            const price = service.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret });
+        })
 
         app.get('/service', async (req, res) => {
             const query = {};
