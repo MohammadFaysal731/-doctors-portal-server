@@ -196,7 +196,7 @@ async function run() {
             res.send(result);
         });
 
-        app.patch('/booking/:id', verifyJWT, async (req, res) => {
+        app.patch('/booking/:id', async (req, res) => {
             const id = req.params.id;
             const payment = req.body;
             console.log(payment);
