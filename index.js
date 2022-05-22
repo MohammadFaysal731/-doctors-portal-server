@@ -16,7 +16,6 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.o2q6h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-console.log('all route should be work')
 
 function verifyJWT(req, res, next) {
     const authorization = req.headers.authorization;
@@ -43,6 +42,7 @@ async function run() {
         const bookingCollection = client.db('doctors_portal').collection('bookings');
         const userCollection = client.db('doctors_portal').collection('users');
         const doctorCollection = client.db('doctors_portal').collection('doctors');
+        const paymentCollection = client.db('doctors_portal').collection('payments');
 
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email;
@@ -55,7 +55,7 @@ async function run() {
             }
         }
 
-        app.post('/create-payment-intent', async (req, res) => {
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
             const service = req.body;
             const price = service.price;
             const amount = price * 100;
@@ -82,7 +82,6 @@ async function run() {
         app.get('/admin/:email', async (req, res) => {
             const email = req.params.email;
             const user = await userCollection.findOne({ email: email });
-            console.log(user)
             const isAdmin = user.role === 'admin';
             res.send({ admin: isAdmin });
         })
@@ -107,7 +106,7 @@ async function run() {
                 $set: user
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
             res.send({ result, accessToken: token });
         });
 
@@ -197,7 +196,21 @@ async function run() {
             res.send(result);
         });
 
-
+        app.patch('/booking/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            console.log(payment);
+            const filter = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId,
+                }
+            };
+            const result = await paymentCollection.insertOne(payment);
+            const updatedBooking = await bookingCollection.updateOne(filter, updateDoc);
+            res.send(updatedBooking);
+        })
 
     }
     finally {
@@ -208,9 +221,6 @@ async function run() {
 
 run().catch(console.dir)
 
-app.get('/faysal', async (req, res) => {
-    res.send('hello Faysla')
-})
 app.get('/', (req, res) => {
     res.send('Hello From Doctor Uncle!')
 })
