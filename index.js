@@ -16,6 +16,7 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.o2q6h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+console.log('all route should be work')
 
 function verifyJWT(req, res, next) {
     const authorization = req.headers.authorization;
@@ -196,9 +197,7 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/faysal', async (req, res) => {
-            res.send('hello Faysla')
-        })
+
 
     }
     finally {
@@ -209,6 +208,9 @@ async function run() {
 
 run().catch(console.dir)
 
+app.get('/faysal', async (req, res) => {
+    res.send('hello Faysla')
+})
 app.get('/', (req, res) => {
     res.send('Hello From Doctor Uncle!')
 })
